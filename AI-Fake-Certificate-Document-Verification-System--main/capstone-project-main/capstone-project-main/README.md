@@ -4,9 +4,8 @@
 Department of CSE | Guided by: Dr. Selina Ruby
 
 **Team:**
-- 727823TUCS332 — Sugena Munavara
+- 727823TUCS358 — Vishal PN
 - 727823TUCS350 — Vibin
-- 727823TUCS353 — Vijay Ragaventhiran
 
 ---
 
