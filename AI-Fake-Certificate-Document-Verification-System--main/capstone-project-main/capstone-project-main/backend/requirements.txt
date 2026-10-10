@@ -1,0 +1,38 @@
+# ============================================================
+# requirements.txt — Python dependencies
+# AI Fake Certificate & Document Verification System
+# ============================================================
+# Install all with:  pip install -r requirements.txt
+# Python version recommended: 3.8 – 3.11
+# ============================================================
+
+# ── Web Framework ────────────────────────────────────────────
+flask==3.0.0
+flask-cors==4.0.0          # Allow cross-origin requests from frontend
+
+# ── Image Processing ─────────────────────────────────────────
+Pillow==10.2.0             # Image open/save/resize
+opencv-python==4.9.0.80   # Advanced image preprocessing, noise detection
+
+# ── OCR ──────────────────────────────────────────────────────
+pytesseract==0.3.10        # Python wrapper for Tesseract OCR
+# NOTE: You must also install Tesseract binary:
+#   Ubuntu/Debian: sudo apt-get install tesseract-ocr
+#   macOS:         brew install tesseract
+#   Windows:       https://github.com/UB-Mannheim/tesseract/wiki
+
+# ── PDF support ──────────────────────────────────────────────
+pdf2image==1.17.0          # Convert PDF pages to PIL images
+# NOTE: pdf2image needs poppler:
+#   Ubuntu/Debian: sudo apt-get install poppler-utils
+#   macOS:         brew install poppler
+#   Windows:       https://github.com/oschwartz10612/poppler-windows
+
+# ── Machine Learning ─────────────────────────────────────────
+scikit-learn==1.4.0        # RandomForestClassifier, SVM, metrics
+numpy==1.26.3              # Numerical arrays
+scipy==1.12.0              # Statistical features
+
+# ── Utilities ────────────────────────────────────────────────
+joblib==1.3.2              # Save/load trained ML models
+werkzeug==3.0.1            # File upload helpers (included with Flask)

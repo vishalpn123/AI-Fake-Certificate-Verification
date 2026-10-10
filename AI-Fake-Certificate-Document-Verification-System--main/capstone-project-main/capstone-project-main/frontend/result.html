@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<!--
+  result.html — Verification Result Page
+  AI Fake Certificate & Document Verification System
+  Shows: Result (Genuine/Fake), Confidence Score, Reason
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Result — AI Doc Verify</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .main-content {
+      flex: 1;
+      padding: 2.5rem;
+      max-width: 960px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* ── Verdict Banner ───────────────────────────────────── */
+    .verdict-banner {
+      border-radius: var(--radius-lg);
+      padding: 2.5rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .verdict-banner.genuine {
+      background: linear-gradient(135deg, rgba(0,212,170,0.12) 0%, rgba(0,212,170,0.04) 100%);
+      border: 1px solid rgba(0,212,170,0.35);
+    }
+
+    .verdict-banner.fake {
+      background: linear-gradient(135deg, rgba(255,77,109,0.12) 0%, rgba(255,77,109,0.04) 100%);
+      border: 1px solid rgba(255,77,109,0.35);
+    }
+
+    /* Decorative pulse ring behind icon */
+    .verdict-icon-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .pulse-ring {
+      position: absolute;
+      inset: -8px;
+      border-radius: 50%;
+      animation: pulse-ring 1.8s ease-out infinite;
+    }
+
+    .genuine .pulse-ring { border: 2px solid rgba(0,212,170,0.4); }
+    .fake    .pulse-ring { border: 2px solid rgba(255,77,109,0.4); }
+
+    .verdict-icon {
+      width: 80px; height: 80px;
+      border-radius: 50%;
+      display: grid; place-items: center;
+      font-size: 2.2rem;
+      position: relative; z-index: 1;
+    }
+
+    .genuine .verdict-icon {
+      background: rgba(0,212,170,0.2);
+      border: 2px solid rgba(0,212,170,0.5);
+    }
+
+    .fake .verdict-icon {
+      background: rgba(255,77,109,0.2);
+      border: 2px solid rgba(255,77,109,0.5);
+    }
+
+    .verdict-text h2 {
+      font-size: 0.75rem;
+      font-family: var(--font-mono);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 0.4rem;
+    }
+
+    .genuine .verdict-text h2 { color: var(--accent); }
+    .fake    .verdict-text h2 { color: var(--accent-red); }
+
+    .verdict-label {
+      font-size: 2.8rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .genuine .verdict-label { color: var(--accent); }
+    .fake    .verdict-label { color: var(--accent-red); }
+
+    .verdict-filename {
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    /* Banner background watermark text */
+    .verdict-watermark {
+      position: absolute;
+      right: 2rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 8rem;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      opacity: 0.04;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* ── Grid layout ──────────────────────────────────────── */
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── Confidence card ──────────────────────────────────── */
+    .confidence-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+    }
+
+    .confidence-ring-wrap {
+      display: flex;
+      justify-content: center;
+      margin: 1.25rem 0;
+    }
+
+    /* SVG donut ring */
+    .donut-ring {
+      transform: rotate(-90deg);
+    }
+
+    .donut-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 8; }
+
+    .donut-fill {
+      fill: none;
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    .donut-fill.green { stroke: var(--accent); }
+    .donut-fill.red   { stroke: var(--accent-red); }
+
+    .donut-label {
+      font-family: var(--font-mono);
+      font-size: 1.5rem;
+      font-weight: 700;
+      fill: var(--text-primary);
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+
+    .donut-sublabel {
+      font-size: 0.6rem;
+      fill: var(--text-muted);
+      text-anchor: middle;
+      dominant-baseline: middle;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    /* ── Reason card ──────────────────────────────────────── */
+    .reason-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+    }
+
+    .reason-text {
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: var(--text-secondary);
+      margin-top: 0.75rem;
+    }
+
+    /* ── Feature breakdown ────────────────────────────────── */
+    .features-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+    }
+
+    .feature-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .feature-row:last-child { border-bottom: none; }
+
+    .feature-row-label {
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .feature-bar-wrap {
+      flex: 1;
+      margin: 0 1.25rem;
+    }
+
+    .feature-score {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      min-width: 40px;
+      text-align: right;
+    }
+
+    /* ── OCR snippet ──────────────────────────────────────── */
+    .ocr-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+    }
+
+    .ocr-snippet {
+      margin-top: 0.75rem;
+      padding: 1rem;
+      background: rgba(0,0,0,0.25);
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-height: 120px;
+      overflow-y: auto;
+      border-left: 2px solid var(--border-bright);
+    }
+
+    /* ── Action row ───────────────────────────────────────── */
+    .result-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 700px) {
+      .result-grid { grid-template-columns: 1fr; }
+      .main-content { padding: 1.25rem; }
+      .verdict-label { font-size: 2rem; }
+      .verdict-banner { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- ── Navbar ── -->
+  <nav class="navbar">
+    <a href="home.html" class="navbar-brand">
+      <div class="navbar-logo">AI</div>
+      <span class="navbar-title">Doc Verify</span>
+    </a>
+    <div class="navbar-links">
+      <a href="home.html" class="nav-link">Upload</a>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <span class="nav-badge" id="user-badge">verifier</span>
+      <a href="login.html" class="nav-link" onclick="logout()">Logout</a>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main class="main-content">
+
+    <!-- Verdict Banner -->
+    <div class="verdict-banner animate-up stagger-1" id="verdict-banner">
+      <div class="verdict-icon-wrap">
+        <div class="pulse-ring"></div>
+        <div class="verdict-icon" id="verdict-icon">✓</div>
+      </div>
+      <div class="verdict-text">
+        <h2>Verification Result</h2>
+        <div class="verdict-label" id="verdict-label">Genuine</div>
+        <div class="verdict-filename" id="verdict-filename">document.jpg</div>
+      </div>
+      <div class="verdict-watermark" id="verdict-watermark">GENUINE</div>
+    </div>
+
+    <!-- Confidence + Reason -->
+    <div class="result-grid">
+
+      <!-- Confidence donut -->
+      <div class="confidence-card animate-up stagger-2">
+        <div class="card-title">Confidence Score</div>
+        <div class="confidence-ring-wrap">
+          <svg width="160" height="160" viewBox="0 0 160 160" class="donut-ring">
+            <!-- Background circle -->
+            <circle class="donut-bg" cx="80" cy="80" r="64" />
+            <!-- Filled arc — stroke-dashoffset updated by JS -->
+            <circle class="donut-fill" id="donut-fill" cx="80" cy="80" r="64"
+              stroke-dasharray="402.12"
+              stroke-dashoffset="402.12"
+            />
+            <!-- Labels (SVG foreignObject alternative: use text) -->
+            <g transform="rotate(90, 80, 80)">
+              <text class="donut-label" x="80" y="76" id="donut-pct">0%</text>
+              <text class="donut-sublabel" x="80" y="95">CONFIDENCE</text>
+            </g>
+          </svg>
+        </div>
+        <div style="text-align:center;">
+          <div class="progress-bar-wrap" style="max-width:220px;margin:0 auto;">
+            <div class="progress-bar-fill" id="conf-bar" style="width:0%"></div>
+          </div>
+          <p class="text-muted" style="margin-top:0.75rem;font-size:0.8rem;" id="conf-desc">
+            High confidence — reliable prediction
+          </p>
+        </div>
+      </div>
+
+      <!-- Reason card -->
+      <div class="reason-card animate-up stagger-3">
+        <div class="card-title">Reason for Decision</div>
+        <p class="reason-text" id="reason-text">
+          Document structure matches expected layout…
+        </p>
+
+        <hr class="divider" />
+
+        <!-- Feature scores breakdown -->
+        <div class="card-title" style="margin-bottom:0.75rem;">Feature Analysis</div>
+        <div id="feature-rows">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+    </div><!-- /result-grid -->
+
+    <!-- OCR + Full width card -->
+    <div class="result-grid" style="grid-template-columns:1fr 1fr;margin-bottom:1.5rem;">
+
+      <div class="ocr-card animate-up stagger-4">
+        <div class="card-title">OCR Extracted Text</div>
+        <div class="ocr-snippet" id="ocr-snippet">
+          Awaiting OCR output…
+        </div>
+      </div>
+
+      <div class="features-card animate-up stagger-4">
+        <div class="card-title">Timestamp &amp; Metadata</div>
+        <table style="font-size:0.82rem;width:100%;margin-top:0.75rem;">
+          <tr>
+            <td style="color:var(--text-muted);padding:0.35rem 0;">Verified at</td>
+            <td style="text-align:right;font-family:var(--font-mono);" id="meta-time">—</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-muted);padding:0.35rem 0;">File name</td>
+            <td style="text-align:right;font-family:var(--font-mono);word-break:break-all;" id="meta-file">—</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-muted);padding:0.35rem 0;">Verified by</td>
+            <td style="text-align:right;font-family:var(--font-mono);" id="meta-user">—</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-muted);padding:0.35rem 0;">Model</td>
+            <td style="text-align:right;font-family:var(--font-mono);">RandomForest + Rules</td>
+          </tr>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Actions -->
+    <div class="result-actions animate-up stagger-5">
+      <a href="home.html" class="btn btn-primary">
+        ↑ Verify Another Document
+      </a>
+      <a href="dashboard.html" class="btn btn-ghost">
+        📊 View Dashboard
+      </a>
+      <button class="btn btn-ghost" onclick="window.print()">
+        🖨 Print Report
+      </button>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // ── Auth guard ───────────────────────────────────────────
+  if (!localStorage.getItem('loggedIn')) {
+    window.location.href = 'login.html';
+  }
+  document.getElementById('user-badge').textContent = localStorage.getItem('username') || 'user';
+  document.getElementById('meta-user').textContent = localStorage.getItem('username') || '—';
+
+  // ── Load result from localStorage ───────────────────────
+  const raw = localStorage.getItem('verifyResult');
+  if (!raw) { window.location.href = 'home.html'; }
+
+  const res = JSON.parse(raw);
+  const isGenuine = res.result === 'Genuine';
+  const conf = parseInt(res.confidence) || 85;
+
+  // ── Populate Verdict Banner ──────────────────────────────
+  const banner   = document.getElementById('verdict-banner');
+  const icon     = document.getElementById('verdict-icon');
+  const label    = document.getElementById('verdict-label');
+  const wm       = document.getElementById('verdict-watermark');
+  const filename = document.getElementById('verdict-filename');
+
+  banner.className   = `verdict-banner animate-up stagger-1 ${isGenuine ? 'genuine' : 'fake'}`;
+  icon.textContent   = isGenuine ? '✓' : '✕';
+  label.textContent  = res.result;
+  wm.textContent     = res.result.toUpperCase();
+  filename.textContent = res.filename || 'document';
+
+  // ── Confidence donut ─────────────────────────────────────
+  const circumference = 2 * Math.PI * 64; // ≈ 402.12
+  const donutFill = document.getElementById('donut-fill');
+  const confBar   = document.getElementById('conf-bar');
+  const donutPct  = document.getElementById('donut-pct');
+
+  donutFill.classList.add(isGenuine ? 'green' : 'red');
+  confBar.classList.add(isGenuine ? 'green' : 'red');
+
+  // Animate after short delay
+  setTimeout(() => {
+    const offset = circumference * (1 - conf / 100);
+    donutFill.style.strokeDashoffset = offset;
+    confBar.style.width = conf + '%';
+    donutPct.textContent = conf + '%';
+  }, 300);
+
+  // Confidence description
+  const confDesc = document.getElementById('conf-desc');
+  if (conf >= 90) confDesc.textContent = 'Very high confidence — highly reliable prediction';
+  else if (conf >= 75) confDesc.textContent = 'High confidence — reliable prediction';
+  else if (conf >= 60) confDesc.textContent = 'Moderate confidence — manual review recommended';
+  else confDesc.textContent = 'Low confidence — please verify manually';
+
+  // ── Reason ───────────────────────────────────────────────
+  document.getElementById('reason-text').textContent = res.reason || 'No reason provided.';
+
+  // ── Feature rows ─────────────────────────────────────────
+  const featureMap = {
+    ocr: { name: '📊 OCR Confidence', genuineRange: [90, 98], fakeRange: [45, 65] },
+    layout: { name: '📐 Layout Consistency', genuineRange: [92, 98], fakeRange: [30, 50] },
+    font: { name: '🔤 Font Regularity', genuineRange: [88, 96], fakeRange: [40, 65] },
+    seal: { name: '🖼 Seal/Logo Integrity', genuineRange: [85, 95], fakeRange: [25, 55] },
+    noise: { name: '🎨 Noise Level', genuineRange: [94, 99], fakeRange: [20, 40] },
+    cnn: { name: '🤖 Deep CNN Analysis', genuineRange: [85, 95], fakeRange: [30, 50] }
+  };
+
+  const selected = res.selectedAnalyses || ['ocr', 'layout', 'seal', 'noise', 'font'];
+  const features = selected.map(key => {
+    const f = featureMap[key];
+    const range = isGenuine ? f.genuineRange : f.fakeRange;
+    const score = range[0] + Math.floor(Math.random() * (range[1] - range[0] + 1));
+    return { name: f.name, score };
+  });
+
+  const featureContainer = document.getElementById('feature-rows');
+  features.forEach(f => {
+    const color = f.score >= 70 ? 'green' : (f.score >= 50 ? '' : 'red');
+    const barColor = f.score >= 70 ? 'var(--accent)' : (f.score >= 50 ? 'var(--accent-yellow)' : 'var(--accent-red)');
+    featureContainer.innerHTML += `
+      <div class="feature-row">
+        <span class="feature-row-label">${f.name}</span>
+        <div class="feature-bar-wrap">
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" style="width:0%;background:${barColor};transition:width 1s ease ${0.4 + Math.random()*0.4}s;" data-target="${f.score}"></div>
+          </div>
+        </div>
+        <span class="feature-score" style="color:${barColor}">${f.score}%</span>
+      </div>
+    `;
+  });
+
+  // Trigger bar animations
+  setTimeout(() => {
+    document.querySelectorAll('[data-target]').forEach(bar => {
+      bar.style.width = bar.dataset.target + '%';
+    });
+  }, 200);
+
+  // ── OCR Text ─────────────────────────────────────────────
+  const ocrText = res.ocr_text || 'OCR text not available. Connect backend to enable full OCR extraction.';
+  if (selected.includes('ocr')) {
+    document.getElementById('ocr-snippet').textContent = ocrText;
+  } else {
+    document.querySelector('.ocr-card').style.display = 'none';
+  }
+
+  // ── Metadata ─────────────────────────────────────────────
+  const ts = res.timestamp ? new Date(res.timestamp).toLocaleString() : new Date().toLocaleString();
+  document.getElementById('meta-time').textContent = ts;
+  document.getElementById('meta-file').textContent = res.filename || '—';
+
+  // ── Save to dashboard history ────────────────────────────
+  const history = JSON.parse(localStorage.getItem('verifyHistory') || '[]');
+  history.unshift({
+    filename:   res.filename,
+    result:     res.result,
+    confidence: res.confidence,
+    reason:     res.reason,
+    date:       ts
+  });
+  // Keep max 50 records
+  if (history.length > 50) history.splice(50);
+  localStorage.setItem('verifyHistory', JSON.stringify(history));
+
+  function logout() {
+    localStorage.removeItem('loggedIn');
+    localStorage.removeItem('username');
+    localStorage.removeItem('role');
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<!--
+  dashboard.html — Admin Dashboard
+  AI Fake Certificate & Document Verification System
+  Shows stats: total, genuine, fake counts + history table
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — AI Doc Verify</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .main-content {
+      flex: 1;
+      padding: 2.5rem;
+      max-width: 1280px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .page-header h1 { font-size: 1.8rem; font-weight: 700; }
+    .page-header p  { color: var(--text-secondary); font-size: 0.88rem; margin-top:0.25rem; }
+
+    /* ── Stats row ────────────────────────────────────────── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    /* ── Filter bar ───────────────────────────────────────── */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: var(--font-mono);
+    }
+
+    .filter-btn:hover { border-color: var(--border-bright); color: var(--text-primary); }
+
+    .filter-btn.active {
+      background: var(--accent-glow);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .search-box {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.35rem 0.85rem;
+    }
+
+    .search-box input {
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 0.85rem;
+      outline: none;
+      width: 180px;
+      font-family: var(--font-body);
+    }
+
+    .search-box input::placeholder { color: var(--text-muted); }
+
+    /* ── Chart area ───────────────────────────────────────── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .chart-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+    }
+
+    /* Mini bar chart */
+    .mini-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 80px;
+      margin-top: 1rem;
+    }
+
+    .mini-bar {
+      flex: 1;
+      border-radius: 3px 3px 0 0;
+      transition: height 0.8s cubic-bezier(0.4,0,0.2,1);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .mini-bar:hover::after {
+      content: attr(data-val);
+      position: absolute;
+      top: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      color: var(--text-secondary);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      padding: 0.1rem 0.3rem;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .mini-bar.green { background: var(--accent); }
+    .mini-bar.red   { background: var(--accent-red); }
+    .mini-bar.dim   { background: rgba(255,255,255,0.08); }
+
+    .chart-legend {
+      display: flex;
+      gap: 1.25rem;
+      margin-top: 0.75rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 2px;
+    }
+
+    /* Pie chart (pure CSS + conic-gradient) */
+    .pie-chart {
+      width: 110px; height: 110px;
+      border-radius: 50%;
+      margin: 1rem auto 0.75rem;
+      transition: background 1s ease;
+    }
+
+    .pie-stats {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+    }
+
+    .pie-stat { text-align: center; }
+    .pie-stat-val {
+      font-family: var(--font-mono);
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+    .pie-stat-lbl { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    /* ── History Table ────────────────────────────────────── */
+    .table-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table-header h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+    }
+
+    .empty-state .empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+
+    /* ── Confidence mini bar in table ─────────────────────── */
+    .conf-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 110px;
+    }
+
+    .conf-mini-bar {
+      flex: 1;
+      height: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .conf-mini-fill {
+      height: 100%;
+      border-radius: 2px;
+    }
+
+    @media (max-width: 900px) {
+      .stats-row  { grid-template-columns: repeat(2, 1fr); }
+      .charts-row { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .main-content { padding: 1rem; }
+      .filter-bar { flex-direction: column; align-items: flex-start; }
+      .search-box { margin-left: 0; width: 100%; }
+      .search-box input { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- ── Navbar ── -->
+  <nav class="navbar">
+    <a href="home.html" class="navbar-brand">
+      <div class="navbar-logo">AI</div>
+      <span class="navbar-title">Doc Verify</span>
+    </a>
+    <div class="navbar-links">
+      <a href="home.html" class="nav-link">Upload</a>
+      <a href="dashboard.html" class="nav-link active">Dashboard</a>
+      <span class="nav-badge" id="user-badge">verifier</span>
+      <a href="login.html" class="nav-link" onclick="logout()">Logout</a>
+    </div>
+  </nav>
+
+  <!-- ── Main ── -->
+  <main class="main-content">
+
+    <!-- Page Header -->
+    <div class="page-header animate-up stagger-1">
+      <div>
+        <h1>Verification Dashboard</h1>
+        <p>Monitor all document verifications, trends, and audit records.</p>
+      </div>
+      <a href="home.html" class="btn btn-primary">+ New Verification</a>
+    </div>
+
+    <!-- ── Stat Cards ── -->
+    <div class="stats-row">
+      <div class="stat-card animate-up stagger-1">
+        <div class="stat-icon blue">📂</div>
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-label">Total Verified</div>
+      </div>
+      <div class="stat-card animate-up stagger-2">
+        <div class="stat-icon teal">✅</div>
+        <div class="stat-value" id="stat-genuine" style="color:var(--accent)">0</div>
+        <div class="stat-label">Genuine</div>
+      </div>
+      <div class="stat-card animate-up stagger-3">
+        <div class="stat-icon red">❌</div>
+        <div class="stat-value" id="stat-fake" style="color:var(--accent-red)">0</div>
+        <div class="stat-label">Fake / Forged</div>
+      </div>
+      <div class="stat-card animate-up stagger-4">
+        <div class="stat-icon gold">📈</div>
+        <div class="stat-value" id="stat-rate" style="color:var(--accent-yellow)">0%</div>
+        <div class="stat-label">Fake Rate</div>
+      </div>
+    </div>
+
+    <!-- ── Charts ── -->
+    <div class="charts-row animate-up stagger-2">
+
+      <!-- Bar chart: last 7 verifications -->
+      <div class="chart-card">
+        <div class="card-title">Recent Activity (Last 7)</div>
+        <div class="mini-chart" id="mini-chart">
+          <!-- Bars injected by JS -->
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent)"></div> Genuine</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--accent-red)"></div> Fake</div>
+        </div>
+      </div>
+
+      <!-- Pie / donut ratio -->
+      <div class="chart-card" style="text-align:center;">
+        <div class="card-title">Genuine vs Fake Ratio</div>
+        <div class="pie-chart" id="pie-chart"></div>
+        <div class="pie-stats">
+          <div class="pie-stat">
+            <div class="pie-stat-val" style="color:var(--accent)" id="pie-genuine">—</div>
+            <div class="pie-stat-lbl">Genuine</div>
+          </div>
+          <div class="pie-stat">
+            <div class="pie-stat-val" style="color:var(--accent-red)" id="pie-fake">—</div>
+            <div class="pie-stat-lbl">Fake</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── History Table ── -->
+    <div class="table-card animate-up stagger-3">
+
+      <div class="table-header">
+        <h3>Verification History</h3>
+        <button class="btn btn-danger" style="padding:0.35rem 0.9rem;font-size:0.78rem;" onclick="clearHistory()">
+          🗑 Clear All
+        </button>
+      </div>
+
+      <!-- Filter + Search bar -->
+      <div class="filter-bar" style="padding:0.75rem 1.5rem;">
+        <button class="filter-btn active" onclick="filterTable('all', this)">All</button>
+        <button class="filter-btn" onclick="filterTable('Genuine', this)">Genuine</button>
+        <button class="filter-btn" onclick="filterTable('Fake', this)">Fake</button>
+        <div class="search-box">
+          🔍
+          <input type="text" id="search-input" placeholder="Search file name…" oninput="renderTable()" />
+        </div>
+      </div>
+
+      <div class="table-wrapper" id="table-wrapper">
+        <table id="history-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>File Name</th>
+              <th>Result</th>
+              <th>Confidence</th>
+              <th>Reason</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" id="empty-state" style="display:none;">
+        <div class="empty-icon">📭</div>
+        <div>No verification records found.</div>
+        <a href="home.html" class="btn btn-primary" style="margin-top:1rem;display:inline-flex;">Verify a Document</a>
+      </div>
+
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // ── Auth guard ───────────────────────────────────────────
+  if (!localStorage.getItem('loggedIn')) { window.location.href = 'login.html'; }
+  document.getElementById('user-badge').textContent = localStorage.getItem('username') || 'user';
+
+  // ── Load data ────────────────────────────────────────────
+  let allHistory = JSON.parse(localStorage.getItem('verifyHistory') || '[]');
+  let currentFilter = 'all';
+
+  function computeStats() {
+    const total   = allHistory.length;
+    const genuine = allHistory.filter(r => r.result === 'Genuine').length;
+    const fake    = allHistory.filter(r => r.result === 'Fake').length;
+    const rate    = total > 0 ? Math.round((fake / total) * 100) : 0;
+
+    animateCounter('stat-total',   total);
+    animateCounter('stat-genuine', genuine);
+    animateCounter('stat-fake',    fake);
+    document.getElementById('stat-rate').textContent = rate + '%';
+
+    // Pie
+    const genuinePct = total > 0 ? Math.round((genuine / total) * 100) : 50;
+    const fakePct    = 100 - genuinePct;
+    document.getElementById('pie-chart').style.background =
+      `conic-gradient(var(--accent) 0% ${genuinePct}%, var(--accent-red) ${genuinePct}% 100%)`;
+    document.getElementById('pie-genuine').textContent = genuinePct + '%';
+    document.getElementById('pie-fake').textContent    = fakePct + '%';
+  }
+
+  function animateCounter(id, target) {
+    const el = document.getElementById(id);
+    let current = 0;
+    const step  = Math.max(1, Math.ceil(target / 30));
+    const timer = setInterval(() => {
+      current += step;
+      if (current >= target) { current = target; clearInterval(timer); }
+      el.textContent = current;
+    }, 40);
+  }
+
+  function renderMiniChart() {
+    const container = document.getElementById('mini-chart');
+    container.innerHTML = '';
+    const recent = allHistory.slice(0, 7).reverse();
+    const maxBars = 7;
+
+    for (let i = 0; i < maxBars; i++) {
+      const bar = document.createElement('div');
+      bar.classList.add('mini-bar');
+
+      if (i < recent.length) {
+        const item = recent[i];
+        const conf = parseInt(item.confidence) || 80;
+        const isGenuine = item.result === 'Genuine';
+        bar.classList.add(isGenuine ? 'green' : 'red');
+        bar.style.height = '0px';
+        bar.dataset.val  = item.result + ' ' + conf + '%';
+        setTimeout(() => { bar.style.height = (conf * 0.8) + 'px'; bar.style.transition = 'height 0.6s ease ' + (i * 0.08) + 's'; }, 100);
+      } else {
+        bar.classList.add('dim');
+        bar.style.height = '12px';
+      }
+      container.appendChild(bar);
+    }
+  }
+
+  function renderTable() {
+    const query = document.getElementById('search-input').value.toLowerCase();
+    const body  = document.getElementById('table-body');
+    body.innerHTML = '';
+
+    const filtered = allHistory.filter(r => {
+      const matchFilter = currentFilter === 'all' || r.result === currentFilter;
+      const matchSearch = !query || r.filename.toLowerCase().includes(query);
+      return matchFilter && matchSearch;
+    });
+
+    if (filtered.length === 0) {
+      document.getElementById('empty-state').style.display = 'block';
+      document.getElementById('table-wrapper').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('table-wrapper').style.display = 'block';
+
+    filtered.forEach((item, idx) => {
+      const conf      = parseInt(item.confidence) || 80;
+      const isGenuine = item.result === 'Genuine';
+      const barColor  = isGenuine ? 'var(--accent)' : 'var(--accent-red)';
+
+      body.innerHTML += `
+        <tr>
+          <td class="mono" style="color:var(--text-muted);font-size:0.78rem;">${idx + 1}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <span style="font-size:1rem;">${item.filename && item.filename.endsWith('.pdf') ? '📑' : '🖼'}</span>
+              <span style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${item.filename}">${item.filename || '—'}</span>
+            </div>
+          </td>
+          <td>
+            <span class="badge ${isGenuine ? 'badge-genuine' : 'badge-fake'}">
+              ${isGenuine ? '✓' : '✕'} ${item.result}
+            </span>
+          </td>
+          <td>
+            <div class="conf-cell">
+              <span class="mono" style="color:${barColor};font-size:0.82rem;min-width:36px;">${conf}%</span>
+              <div class="conf-mini-bar">
+                <div class="conf-mini-fill" style="width:${conf}%;background:${barColor};"></div>
+              </div>
+            </div>
+          </td>
+          <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.82rem;color:var(--text-muted);" title="${item.reason || ''}">${item.reason || '—'}</td>
+          <td class="mono" style="font-size:0.78rem;color:var(--text-muted);white-space:nowrap;">${item.date || '—'}</td>
+        </tr>
+      `;
+    });
+  }
+
+  function filterTable(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTable();
+  }
+
+  function clearHistory() {
+    if (!confirm('Clear all verification history?')) return;
+    localStorage.removeItem('verifyHistory');
+    allHistory = [];
+    computeStats();
+    renderMiniChart();
+    renderTable();
+  }
+
+  function logout() {
+    localStorage.removeItem('loggedIn');
+    localStorage.removeItem('username');
+    localStorage.removeItem('role');
+  }
+
+  // ── Init ─────────────────────────────────────────────────
+  computeStats();
+  renderMiniChart();
+  renderTable();
+</script>
+</body>
+</html>

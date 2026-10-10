@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<!--
+  login.html — Login Page
+  AI Fake Certificate & Document Verification System
+  Sri Krishna College of Technology, Coimbatore
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login — AI Doc Verify</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Login-specific layout ────────────────────────────── */
+    .login-page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    /* Left panel — branding */
+    .login-panel-left {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 4rem;
+      background: linear-gradient(135deg, #0a1628 0%, #0d1f3c 50%, #081422 100%);
+      border-right: 1px solid var(--border);
+    }
+
+    /* Decorative corner geometry */
+    .login-panel-left::before {
+      content: '';
+      position: absolute;
+      top: -120px; right: -120px;
+      width: 380px; height: 380px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,212,170,0.12);
+    }
+    .login-panel-left::after {
+      content: '';
+      position: absolute;
+      bottom: -80px; left: -80px;
+      width: 260px; height: 260px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,212,170,0.08);
+    }
+
+    /* Scan line animation on left panel */
+    .scan-line {
+      position: absolute;
+      left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0.4;
+      animation: scanline 3s linear infinite;
+    }
+
+    .brand-logo-big {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, var(--accent), #0098cc);
+      border-radius: 16px;
+      display: grid; place-items: center;
+      font-family: var(--font-mono);
+      font-size: 1.6rem; font-weight: 700;
+      color: var(--bg-primary);
+      margin-bottom: 2rem;
+      box-shadow: 0 8px 32px rgba(0,212,170,0.3);
+      position: relative; z-index: 1;
+    }
+
+    .brand-headline {
+      font-family: var(--font-mono);
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+      position: relative; z-index: 1;
+    }
+
+    .brand-headline span { color: var(--accent); }
+
+    .brand-desc {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 360px;
+      position: relative; z-index: 1;
+    }
+
+    .feature-list {
+      margin-top: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      position: relative; z-index: 1;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .feature-dot {
+      width: 8px; height: 8px;
+      background: var(--accent);
+      border-radius: 50%;
+      flex-shrink: 0;
+      box-shadow: 0 0 8px rgba(0,212,170,0.6);
+    }
+
+
+    /* Right panel — form */
+    .login-panel-right {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 4rem 3rem;
+      background: var(--bg-secondary);
+    }
+
+    .login-form-container {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .login-form-header {
+      margin-bottom: 2.5rem;
+      text-align: center;
+    }
+
+    .login-form-header h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .login-form-header p {
+      font-size: 0.87rem;
+      color: var(--text-secondary);
+    }
+
+    /* Password toggle */
+    .input-group {
+      position: relative;
+    }
+
+    .input-group .form-input {
+      padding-right: 3rem;
+    }
+
+    .toggle-pass {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 1rem;
+      transition: var(--transition);
+      padding: 0;
+    }
+
+    .toggle-pass:hover { color: var(--accent); }
+
+    /* Remember row */
+    .form-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.83rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .checkbox-label input {
+      accent-color: var(--accent);
+      width: 14px; height: 14px;
+    }
+
+    /* Demo credentials box */
+    .demo-creds {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: rgba(0,212,170,0.05);
+      border: 1px dashed var(--border-bright);
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      line-height: 1.8;
+    }
+
+    .demo-creds strong { color: var(--accent); }
+
+    /* Error message */
+    #error-msg { display: none; }
+
+    /* Loading spinner inside button */
+    .btn-spinner {
+      display: none;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: var(--bg-primary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .login-page { grid-template-columns: 1fr; }
+      .login-panel-left { display: none; }
+      .login-panel-right { padding: 2rem 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="login-page">
+
+  <!-- ── Left Branding Panel ── -->
+  <div class="login-panel-left">
+    <div class="scan-line"></div>
+
+    <div class="brand-logo-big">AI</div>
+
+    <h1 class="brand-headline">
+      Intelligent<br/>
+      <span>Certificate</span><br/>
+      Verification
+    </h1>
+
+    <p class="brand-desc">
+      Powered by OCR, image analysis, and machine learning —
+      detect forged or tampered documents in seconds with
+      confidence scoring and detailed analysis reports.
+    </p>
+
+    <div class="feature-list">
+      <div class="feature-item">
+        <div class="feature-dot"></div>
+        <span>OCR-based text extraction & analysis</span>
+      </div>
+      <div class="feature-item">
+        <div class="feature-dot"></div>
+        <span>AI forgery detection (CNN / ML model)</span>
+      </div>
+      <div class="feature-item">
+        <div class="feature-dot"></div>
+        <span>Confidence scoring with reasoning</span>
+      </div>
+      <div class="feature-item">
+        <div class="feature-dot"></div>
+        <span>Admin dashboard & audit trail</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Right Form Panel ── -->
+  <div class="login-panel-right">
+    <div class="login-form-container animate-up">
+
+      <div class="login-form-header">
+        <h2>Welcome Back</h2>
+        <p>Sign in to the verification portal</p>
+      </div>
+
+      <!-- Error alert (shown on bad credentials) -->
+      <div id="error-msg" class="alert alert-error">
+        ⚠ Invalid username or password. Try demo credentials below.
+      </div>
+
+      <form id="login-form" autocomplete="off">
+
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <input
+            class="form-input"
+            type="text"
+            id="username"
+            name="username"
+            placeholder="Enter your username"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-group">
+            <input
+              class="form-input"
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Enter your password"
+              required
+            />
+            <button type="button" class="toggle-pass" id="toggle-pass" title="Toggle password">👁</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="role">Role</label>
+          <select class="form-select" id="role" name="role">
+            <option value="verifier">Verifier</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <label class="checkbox-label">
+            <input type="checkbox" id="remember" />
+            Remember me
+          </label>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+          <span class="btn-spinner" id="btn-spinner"></span>
+          <span id="btn-text">Sign In</span>
+        </button>
+
+      </form>
+
+
+
+    </div>
+  </div>
+</div>
+
+<script>
+
+  // Toggle password visibility
+  document.getElementById('toggle-pass').addEventListener('click', function() {
+    const pwField = document.getElementById('password');
+    pwField.type = pwField.type === 'password' ? 'text' : 'password';
+  });
+
+  // Login form submit handler
+  document.getElementById('login-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const role     = document.getElementById('role').value;
+    const errorEl  = document.getElementById('error-msg');
+    const spinner  = document.getElementById('btn-spinner');
+    const btnText  = document.getElementById('btn-text');
+
+    // Show spinner
+    spinner.style.display = 'block';
+    btnText.textContent = 'Signing in...';
+    errorEl.style.display = 'none';
+
+    // Since credentials are not validated on frontend, accept any non-empty input
+    setTimeout(() => {
+      if (username && password) {
+        localStorage.setItem('loggedIn', 'true');
+        localStorage.setItem('username', username);
+        localStorage.setItem('role', role);
+        window.location.href = 'home.html';
+      } else {
+        errorEl.style.display = 'flex';
+        spinner.style.display = 'none';
+        btnText.textContent = 'Sign In';
+      }
+    }, 900);
+  });
+</script>
+</body>
+</html>

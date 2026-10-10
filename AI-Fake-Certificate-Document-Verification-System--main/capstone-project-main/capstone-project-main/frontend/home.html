@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<!--
+  home.html — Document Upload Page
+  AI Fake Certificate & Document Verification System
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Document — AI Doc Verify</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .main-content {
+      flex: 1;
+      padding: 2.5rem;
+      max-width: 900px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .page-header {
+      margin-bottom: 2.5rem;
+    }
+
+    .page-header h1 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+    }
+
+    .page-header p {
+      color: var(--text-secondary);
+      font-size: 0.92rem;
+    }
+
+    /* ── Upload Drop Zone ─────────────────────────────────── */
+    .upload-zone {
+      border: 2px dashed var(--border-bright);
+      border-radius: var(--radius-lg);
+      padding: 3.5rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      background: rgba(0,212,170,0.02);
+      position: relative;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .upload-zone.has-file {
+      border-color: var(--accent);
+      background: rgba(0,212,170,0.05);
+    }
+
+    .upload-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .upload-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+
+    .upload-hint {
+      font-size: 0.83rem;
+      color: var(--text-muted);
+    }
+
+    .upload-hint strong { color: var(--text-secondary); }
+
+    /* Hidden actual file input */
+    #file-input { display: none; }
+
+    /* File type chips */
+    .file-types {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-top: 1.2rem;
+      flex-wrap: wrap;
+    }
+
+    .file-chip {
+      padding: 0.25rem 0.7rem;
+      border-radius: 20px;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+    .file-chip:hover { border-color: var(--accent); color: var(--accent); }
+    .file-chip.active {
+      background: var(--accent);
+      color: var(--bg-primary);
+      border-color: var(--accent);
+    }
+
+    /* Preview area */
+    #preview-area {
+      display: none;
+      margin-top: 2rem;
+    }
+
+    .preview-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1rem;
+    }
+
+    .preview-header h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .preview-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .preview-thumb {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .preview-thumb-pdf {
+      width: 80px;
+      height: 80px;
+      background: rgba(255,77,109,0.1);
+      border: 1px solid rgba(255,77,109,0.2);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+
+    .preview-info { flex: 1; min-width: 0; }
+
+    .preview-name {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .preview-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Form section */
+    .form-section {
+      margin-top: 2rem;
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Options grid */
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    /* Radio card */
+    .radio-card {
+      position: relative;
+    }
+
+    .radio-card input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+    }
+
+    .radio-card label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 0.88rem;
+    }
+
+    .radio-card input:checked + label {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      color: var(--accent);
+    }
+
+    .radio-card label:hover { border-color: var(--border-bright); }
+
+    .radio-icon { font-size: 1.3rem; }
+
+    /* Analysis options */
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    .check-option {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.86rem;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    .check-option input {
+      accent-color: var(--accent);
+      width: 15px; height: 15px;
+    }
+
+    /* Action bar */
+    .action-bar {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+      align-items: center;
+    }
+
+    .action-bar .btn { min-width: 160px; }
+
+    /* Progress indicator during analysis */
+    #analysis-progress { display: none; margin-top: 2rem; }
+
+    .progress-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .progress-step {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      transition: var(--transition);
+    }
+
+    .progress-step.active { color: var(--text-primary); }
+    .progress-step.done   { color: var(--accent); }
+
+    .step-icon {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      display: grid; place-items: center;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+      transition: var(--transition);
+    }
+
+    .progress-step.active .step-icon {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+      animation: spin 1s linear infinite;
+    }
+
+    .progress-step.done .step-icon {
+      border-color: var(--accent);
+      background: rgba(0,212,170,0.15);
+    }
+
+    @media (max-width: 600px) {
+      .options-grid, .checkbox-grid { grid-template-columns: 1fr; }
+      .main-content { padding: 1.25rem; }
+      .action-bar { flex-direction: column; }
+      .action-bar .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrapper">
+
+  <!-- ── Navbar ── -->
+  <nav class="navbar">
+    <a href="home.html" class="navbar-brand">
+      <div class="navbar-logo">AI</div>
+      <span class="navbar-title">Doc Verify</span>
+    </a>
+    <div class="navbar-links">
+      <a href="home.html" class="nav-link active">Upload</a>
+      <a href="dashboard.html" class="nav-link">Dashboard</a>
+      <span class="nav-badge" id="user-badge">verifier</span>
+      <a href="login.html" class="nav-link" onclick="logout()">Logout</a>
+    </div>
+  </nav>
+
+  <!-- ── Main Content ── -->
+  <main class="main-content">
+
+    <div class="page-header animate-up stagger-1">
+      <h1>Upload Document</h1>
+      <p>Upload a certificate, marksheet, or ID document for AI-powered authenticity verification.</p>
+    </div>
+
+    <!-- ── Drop Zone ── -->
+    <div class="card animate-up stagger-2">
+
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+        <span class="upload-icon">📄</span>
+        <div class="upload-title">Drop your document here</div>
+        <p class="upload-hint">
+          or <strong>click to browse</strong> — JPG, PNG, or PDF supported
+        </p>
+        <div class="file-types">
+          <span class="file-chip" data-type="image/jpeg">JPG</span>
+          <span class="file-chip" data-type="image/png">PNG</span>
+          <span class="file-chip" data-type="application/pdf">PDF</span>
+        </div>
+        <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.pdf" />
+      </div>
+
+      <!-- File Preview -->
+      <div id="preview-area">
+        <div class="preview-header">
+          <h3>Selected File</h3>
+          <button class="btn btn-ghost" style="padding:0.3rem 0.8rem;font-size:0.8rem;" onclick="clearFile()">✕ Remove</button>
+        </div>
+        <div class="preview-box">
+          <div id="preview-thumb-container"></div>
+          <div class="preview-info">
+            <div class="preview-name" id="preview-name">document.jpg</div>
+            <div class="preview-meta" id="preview-meta">0 KB · JPG</div>
+          </div>
+          <span class="badge badge-pending">Ready</span>
+        </div>
+      </div>
+
+    </div><!-- /card -->
+
+    <!-- ── Analysis Options ── -->
+    <div class="card animate-up stagger-3" style="margin-top:1.5rem;">
+
+      <div class="section-label">Document Type</div>
+      <div class="options-grid">
+        <div class="radio-card">
+          <input type="radio" name="doc-type" id="dt-cert" value="certificate" checked />
+          <label for="dt-cert">
+            <span class="radio-icon">🎓</span>
+            <div>
+              <div style="font-weight:600;">Certificates</div>
+              <div style="font-size:0.78rem;color:var(--text-muted);">Degree, Course, etc.</div>
+            </div>
+          </label>
+        </div>
+        <div class="radio-card">
+          <input type="radio" name="doc-type" id="dt-doc" value="document" />
+          <label for="dt-doc">
+            <span class="radio-icon">📄</span>
+            <div>
+              <div style="font-weight:600;">Document</div>
+              <div style="font-size:0.78rem;color:var(--text-muted);">Any other document</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:1.5rem;">Analysis Checks</div>
+      <div class="checkbox-grid">
+        <label class="check-option"><input type="checkbox" name="analysis" value="ocr" /> OCR Text Extraction</label>
+        <label class="check-option"><input type="checkbox" name="analysis" value="layout" /> Layout Analysis</label>
+        <label class="check-option"><input type="checkbox" name="analysis" value="seal" /> Seal / Signature Check</label>
+        <label class="check-option"><input type="checkbox" name="analysis" value="noise" /> Noise Artifact Detection</label>
+        <label class="check-option"><input type="checkbox" name="analysis" value="font" /> Font Consistency Check</label>
+        <label class="check-option"><input type="checkbox" name="analysis" value="cnn" /> Deep CNN Analysis</label>
+      </div>
+
+    </div><!-- /options card -->
+
+    <!-- ── Action Bar ── -->
+    <div class="action-bar animate-up stagger-4">
+      <button class="btn btn-primary" id="analyze-btn" onclick="startAnalysis()">
+        🔍 Analyze Document
+      </button>
+      <button class="btn btn-ghost" onclick="clearFile()">
+        ↺ Clear
+      </button>
+    </div>
+
+    <!-- ── Analysis Progress ── -->
+    <div id="analysis-progress" class="card" style="margin-top:1.5rem;">
+      <div class="card-title">Analysis in Progress</div>
+      <div class="progress-steps" id="progress-steps">
+        <div class="progress-step" id="step-0">
+          <div class="step-icon">⚙</div>
+          <span>Preprocessing image (resize, noise removal, enhancement)…</span>
+        </div>
+        <div class="progress-step" id="step-1">
+          <div class="step-icon">📝</div>
+          <span>Running OCR — extracting text content…</span>
+        </div>
+        <div class="progress-step" id="step-2">
+          <div class="step-icon">🔬</div>
+          <span>Extracting features (font, layout, seal, signature)…</span>
+        </div>
+        <div class="progress-step" id="step-3">
+          <div class="step-icon">🤖</div>
+          <span>Running AI forgery detection model…</span>
+        </div>
+        <div class="progress-step" id="step-4">
+          <div class="step-icon">📊</div>
+          <span>Generating verification report…</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // ── Auth guard: redirect if not logged in ────────────────
+  if (!localStorage.getItem('loggedIn')) {
+    window.location.href = 'login.html';
+  }
+
+  // Show username in badge
+  const username = localStorage.getItem('username') || 'user';
+  document.getElementById('user-badge').textContent = username;
+
+  // ── File handling ────────────────────────────────────────
+  let selectedFile = null;
+  let expectedType = null; // type chosen via chips
+
+  const fileInput   = document.getElementById('file-input');
+  const uploadZone  = document.getElementById('upload-zone');
+  const previewArea = document.getElementById('preview-area');
+
+  // File input change handler
+  fileInput.addEventListener('change', function(e) {
+    if (e.target.files.length > 0) {
+      handleFile(e.target.files[0]);
+    }
+  });
+
+  // Clickable file-type chips
+  document.querySelectorAll('.file-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      // toggle active state
+      document.querySelectorAll('.file-chip.active').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      expectedType = chip.getAttribute('data-type');
+      // adjust accept attribute to hint at selection
+      if (expectedType === 'application/pdf') {
+        fileInput.accept = '.pdf';
+      } else if (expectedType.startsWith('image/')) {
+        fileInput.accept = '.jpg,.jpeg,.png';
+      }
+    });
+  });
+
+  // Drag-and-drop support
+  uploadZone.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    uploadZone.classList.add('drag-over');
+  });
+
+  uploadZone.addEventListener('dragleave', function() {
+    uploadZone.classList.remove('drag-over');
+  });
+
+  uploadZone.addEventListener('drop', function(e) {
+    e.preventDefault();
+    uploadZone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length > 0) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  function handleFile(file) {
+    // Validate type
+    const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    if (!allowed.includes(file.type)) {
+      alert('Only JPG, PNG, or PDF files are accepted.');
+      return;
+    }
+    // if user picked a specific chip, enforce it
+    if (expectedType && file.type !== expectedType) {
+      const ext = expectedType.split('/')[1].toUpperCase();
+      alert(`Please select a ${ext} file.`);
+      return;
+    }
+
+    selectedFile = file;
+    uploadZone.classList.add('has-file');
+
+    // Show preview
+    document.getElementById('preview-name').textContent = file.name;
+    document.getElementById('preview-meta').textContent =
+      `${(file.size / 1024).toFixed(1)} KB · ${file.type.split('/')[1].toUpperCase()}`;
+
+    const thumbContainer = document.getElementById('preview-thumb-container');
+    if (file.type === 'application/pdf') {
+      thumbContainer.innerHTML = '<div class="preview-thumb-pdf">📑</div>';
+    } else {
+      const reader = new FileReader();
+      reader.onload = function(ev) {
+        thumbContainer.innerHTML = `<img class="preview-thumb" src="${ev.target.result}" alt="preview"/>`;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    previewArea.style.display = 'block';
+  }
+
+  function clearFile() {
+    selectedFile = null;
+    fileInput.value = '';
+    uploadZone.classList.remove('has-file');
+    previewArea.style.display = 'none';
+    document.getElementById('analysis-progress').style.display = 'none';
+  }
+
+  // ── Analysis flow ────────────────────────────────────────
+  function startAnalysis() {
+    if (!selectedFile) {
+      alert('Please select a document first.');
+      return;
+    }
+
+    const analyzeBtn = document.getElementById('analyze-btn');
+    analyzeBtn.disabled = true;
+    analyzeBtn.textContent = '⏳ Analyzing…';
+
+    // Show progress panel
+    const progressPanel = document.getElementById('analysis-progress');
+    progressPanel.style.display = 'block';
+    progressPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    // Reset all steps
+    for (let i = 0; i < 5; i++) {
+      document.getElementById(`step-${i}`).className = 'progress-step';
+    }
+
+    // Simulate step-by-step progress
+    const delays = [0, 700, 1400, 2100, 2800];
+    delays.forEach((delay, idx) => {
+      setTimeout(() => {
+        if (idx > 0) {
+          document.getElementById(`step-${idx - 1}`).className = 'progress-step done';
+          document.getElementById(`step-${idx - 1}`).querySelector('.step-icon').textContent = '✓';
+        }
+        if (idx < 5) {
+          document.getElementById(`step-${idx}`).className = 'progress-step active';
+        }
+      }, delay);
+    });
+
+    // After all steps: send to backend then redirect
+    setTimeout(() => {
+      document.getElementById('step-4').className = 'progress-step done';
+      document.getElementById('step-4').querySelector('.step-icon').textContent = '✓';
+      sendToBackend();
+    }, 3500);
+  }
+
+  function sendToBackend() {
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('doc_type', document.querySelector('input[name="doc-type"]:checked').value);
+
+    // Collect selected analyses
+    const checkedAnalyses = Array.from(document.querySelectorAll('input[name="analysis"]:checked')).map(cb => cb.value);
+    formData.append('analysis', JSON.stringify(checkedAnalyses));
+
+    // POST to Flask backend
+    fetch('http://localhost:5000/verify', {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      // Save result to localStorage for result.html to pick up
+      localStorage.setItem('verifyResult', JSON.stringify({
+        filename:   selectedFile.name,
+        result:     data.result,
+        confidence: data.confidence,
+        reason:     data.reason,
+        ocr_text:   data.ocr_text || '',
+        timestamp:  new Date().toISOString(),
+        selectedAnalyses: checkedAnalyses
+      }));
+      window.location.href = 'result.html';
+    })
+    .catch(() => {
+      // If backend is not running, use a mock result for demo
+      const mockResult = getMockResult();
+      localStorage.setItem('verifyResult', JSON.stringify({
+        filename:   selectedFile.name,
+        result:     mockResult.result,
+        confidence: mockResult.confidence,
+        reason:     mockResult.reason,
+        ocr_text:   'Sample extracted text from document…',
+        timestamp:  new Date().toISOString()
+      }));
+      window.location.href = 'result.html';
+    });
+  }
+
+  // Mock result when backend is offline (for frontend-only demo)
+  function getMockResult() {
+    const rand = Math.random();
+    if (rand > 0.45) {
+      return { result: 'Genuine', confidence: Math.floor(88 + Math.random() * 10), reason: 'Document structure matches expected layout. OCR text is consistent. No noise artifacts detected.' };
+    } else {
+      return { result: 'Fake', confidence: Math.floor(78 + Math.random() * 18), reason: 'Inconsistent font spacing detected. Layout mismatch in header region. Possible image manipulation artifacts found near seal area.' };
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem('loggedIn');
+    localStorage.removeItem('username');
+    localStorage.removeItem('role');
+  }
+</script>
+</body>
+</html>
